@@ -1,29 +1,33 @@
-/*eslint-env node*/
+/*jshint node:true*/
 
-//------------------------------------------------------------------------------
-// hello world app is based on node.js starter application for Bluemix
-//------------------------------------------------------------------------------
+var express = require("express");
+var bodyParser = require('body-parser');
+var apiv1 = require('./routes/apiv1.js');
+var EJS = require('ejs');
 
-// This application uses express as its web server
-// for more info, see: http://expressjs.com
-var express = require('express');
+EJS.open = "<ejs>";
+EJS.close = "</ejs>";
 
-// cfenv provides access to your Cloud Foundry environment
-// for more info, see: https://www.npmjs.com/package/cfenv
-var cfenv = require('cfenv');
+var host = (process.env.VCAP_APP_HOST || 'localhost');
+var port = (process.env.VCAP_APP_PORT || 3456);
+var url = require('url').format({hostname: host, port: port, protocol: 'http'});
 
-// create a new express server
 var app = express();
+app.use(express.static('static'));
+app.set('view engine', 'ejs');
 
-// serve the files out of ./public as our main files
-app.use(express.static(__dirname + '/public'));
+app.use( bodyParser.json() ); 
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
+app.use('/api/v1/', apiv1.router);
 
-// get the app environment from Cloud Foundry
-var appEnv = cfenv.getAppEnv();
+var http = require('http');
+var server = http.createServer(app);
+server.listen(port, function () {
+    console.log('Weather Report listening on ' + url);
+});
 
-// start server on the specified port and binding host
-app.listen(appEnv.port, '0.0.0.0', function() {
-
-	// print a message when the server starts listening
-  console.log("server starting on " + appEnv.url);
+app.get("/", function(req, res) {
+    return res.render('main');
 });
